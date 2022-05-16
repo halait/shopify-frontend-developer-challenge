@@ -1,0 +1,144 @@
+html {
+    --background--color: #000;
+    --primary-color: #fff;
+    --secondary-color: #aaa;
+    --accent-color: #07f;
+    --card-background-color: #333;
+    --secondary-background-color: #222;
+    --link-color: #66f;
+    --visited-link-color: #a2f;
+
+    background-color: var(--background--color);
+    color: var(--primary-color);
+    font-family: "Roboto", sans-serif;
+    line-height: 1.5;
+}
+html.light {
+    --background--color: #fff;
+    --primary-color: #000;
+    --secondary-color: #555;
+    --accent-color: #07f;
+    --card-background-color: #ccc;
+    --secondary-background-color: #ddd;
+
+    --link-color: #44f;
+    --visited-link-color: #80f;
+}
+body {
+    margin: 0 auto;
+    max-width: 80rem;
+    padding: 0 1rem;
+}
+textarea {
+    resize: vertical;
+    width: 100%;
+    font-family: inherit;
+}
+input, textarea, button {
+    display: block;
+    margin-bottom: 1rem;
+    color: inherit;
+    background-color: inherit;
+    border: 2px solid var(--secondary-color);
+    padding: 0.5rem;
+    box-sizing: border-box;
+}
+input[type="submit"], button {
+    cursor: pointer;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+input:hover[type="submit"], button:hover, button:disabled {
+    background-color: var(--secondary-background-color);
+}
+label {
+    display: block;
+}
+/* :focus-visible accessibility guidelines from here https://developer.mozilla.org/en-US/docs/Web/CSS/:focus-visible */
+input:focus-visible, textarea:focus-visible, button:focus-visible, input:active, button:active {
+    outline: none;
+    border: 2px solid var(--accent-color);
+}
+button:disabled {
+    border: 2px solid var(--secondary-color);
+}
+body::-webkit-scrollbar,body::-webkit-scrollbar-track {
+    background-color: var(--background--color);
+}
+body::-webkit-scrollbar-thumb {
+    background-color: var(--secondary-background-color);
+}
+svg {
+    fill: currentColor;
+}
+a {
+    color: var(--link-color);
+}
+a:visited {
+    color: var(--visited-link-color);
+}
+.Prompt-Div, .Response-Div {
+    margin: 0.4rem 0;
+}
+.Prompt-Div {
+    margin-bottom: 2rem;
+}
+.Card {
+    background-color: var(--card-background-color);
+    padding: 2rem;
+    margin: 3rem 0;
+}
+.Result-Heading {
+    margin: 0;
+}
+.Flex {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+.Spinner-Btn {
+    position: relative;
+}
+.Spinner-Svg {
+    display: none;
+    height: 1.2rem;
+    width: auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+}
+.Spinner-Btn.Spin > .Spinner-Svg {
+    display: block;
+    animation: spin 1s linear infinite;
+}
+.Spinner-Btn.Spin > .Spinner-Content {
+    opacity: 0;
+}
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}
+#prompt-form {
+    margin-bottom: 4rem;
+    max-width: 50rem;
+}
+#prompt-responses-section {
+    display: none;
+}
+#theme-button {
+    margin: 0;
+}
+@media screen and (min-width: 60rem) {
+    body {
+        padding: 0 2rem;
+    }
+}
