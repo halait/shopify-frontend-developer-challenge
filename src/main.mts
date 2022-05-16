@@ -1,66 +1,87 @@
-const htmlNode = document.querySelector('html')!;
-const promptForm = document.getElementById('prompt-form')!;
-const promptInput = document.getElementById('prompt-input') as HTMLInputElement;
-const promptResponsesDiv = document.getElementById('prompt-responses-div')!;
-const promptResponsesSection = document.getElementById('prompt-responses-section')!;
-const promptBtn = document.getElementById('prompt-btn')!;
-promptBtn.classList.remove('Spin');
-
-let lastResultDiv: HTMLDivElement | null = null;
-
-const storedPromptResponsesJson = localStorage.getItem('storedPromptResponses');
-
-const storedPromptResponses: PromptResponse[] = storedPromptResponsesJson ? JSON.parse(storedPromptResponsesJson) as PromptResponse[] : [];
-
-for (const promptResponse of storedPromptResponses) {
-    appendPromptResponse(promptResponse);
+const promptBtnManager = {
+    btn: document.getElementById('prompt-btn')!,
+    /**
+     * * Enables form button
+     * */
+    enableBtn() {
+        this.btn.classList.remove('Spin');
+        this.btn.removeAttribute('disabled');
+    },
+    /**
+     * Disables form button
+     */
+    disableBtn() {
+        this.btn.classList.add('Spin');
+        this.btn.setAttribute('disabled', 'true');
+    }
 }
 
-promptForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const prompt = promptInput.value;
+const responsesManager: ResponsesManager = {
+    promptResponsesDiv: document.getElementById('prompt-responses-div')!,
+    promptResponsesSection: document.getElementById('prompt-responses-section')!,
+    // Used for sorting results by the time they were received
+    lastResultDiv: null,
 
-    const data = {
-        prompt: prompt,
-        temperature: 0.8,
-        max_tokens: 64
-    };
-    promptBtn.classList.add('Spin');
-    promptBtn.setAttribute('disabled', 'true');
-    
-    const gptResponse = await (await fetch("https://api.openai.com/v1/engines/text-curie-001/completions", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer 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`,
+    /**
+     * Inserts node into responses before last node if it is not null, otherwise it is appended
+     * @param promptResponse Node to insert
+     */
+    insert(promptResponse: PromptResponse) {
+        const resultsTemplate = document.getElementById('prompt-response-template') as HTMLTemplateElement;
+        const resultDiv = resultsTemplate.content.firstElementChild!.cloneNode(true) as HTMLDivElement;
+        resultDiv.querySelector('.Prompt-Div')!.textContent = promptResponse.prompt;
+        resultDiv.querySelector('.Response-Div')!.textContent = promptResponse.response;
+
+        // Response section is set to display "none" at start for cleaner look
+        this.promptResponsesSection.style.display = 'block';
+        // Inserting before last inserted result, to sort by time
+        if (this.lastResultDiv !== null) {
+            this.promptResponsesDiv.insertBefore(resultDiv, this.lastResultDiv);
+        } else {
+            this.promptResponsesDiv.appendChild(resultDiv);
+        }
+        this.lastResultDiv = resultDiv;
     },
-    body: JSON.stringify(data),
-    })).json();
-
-    /*
-    // Previously used for testing only
-    const gptResponses = [];
-    const gptResponse = JSON.parse(gptResponses[Math.floor(Math.random() * gptResponses.length)]);
-    await delay(3);
-    */
-
-    promptBtn.classList.remove('Spin');
-    promptBtn.removeAttribute('disabled');
-
-    if (gptResponse.choices === undefined || gptResponse.choices.length === 0) {
-        throw 'Choices missing in response';
+    /**
+     * Removes all nodes in responses
+     */
+    clear() {
+        while (this.promptResponsesDiv.hasChildNodes()) {
+            this.promptResponsesDiv.removeChild(this.promptResponsesDiv.lastChild!);
+        }
+        this.lastResultDiv = null;
     }
+}
 
-    const response = (gptResponse.choices[0].finish_reason === 'length' ? gptResponse.choices[0].text + '...' : gptResponse.choices[0].text).trim();
+// Features two color schemes
+// Setting html class to light uses different css variables for themeing
+// Theme is saved using localStorage
+const themeManager : ThemeManager = {
+    currentTheme: null,
+    htmlNode: document.querySelector('html')!,
+    setTheme(theme: 'light' | 'dark') {
+        if(this.currentTheme !== null) {
+            this.htmlNode.classList.remove(this.currentTheme);
+        }
+        this.htmlNode.classList.add(theme);
+        this.currentTheme = theme;
+        localStorage.setItem('theme', theme);
+    },
+    toggleTheme() {
+        if(this.currentTheme === 'light') {
+            this.setTheme('dark');
+        } else {
+            this.setTheme('light');
+        }
+    }
+}
 
-    const promptResponse = { prompt, response };
-    appendPromptResponse(promptResponse);
-
-    storedPromptResponses.push(promptResponse);
-    localStorage.setItem('storedPromptResponses', JSON.stringify(storedPromptResponses));
-});
-
-async function delay(seconds: number): Promise<void> {
+/**
+ * Used for testing only
+ * @param seconds Amount of seconds to delay
+ * @returns 
+ */
+ async function delay(seconds: number): Promise<void> {
     return new Promise((response) => {
         setTimeout(() => {
             response();
@@ -68,46 +89,87 @@ async function delay(seconds: number): Promise<void> {
     });
 }
 
-function appendPromptResponse(promptResponse: PromptResponse) {
-    const resultsTemplate = document.getElementById('prompt-response-template') as HTMLTemplateElement;
-    const resultDiv = resultsTemplate.content.firstElementChild!.cloneNode(true) as HTMLDivElement;
-    resultDiv.querySelector('.Prompt-Div')!.textContent = promptResponse.prompt;
-    resultDiv.querySelector('.Response-Div')!.textContent = promptResponse.response;
-    promptResponsesSection.style.display = 'block';
-    if (lastResultDiv !== null) {
-        promptResponsesDiv.insertBefore(resultDiv, lastResultDiv);
-    } else {
-        promptResponsesDiv.appendChild(resultDiv);
+// Getting API key this way because Open AI seems to rotate key when uploaded to GitHub
+let apiKey: string | null = null;
+(async function () {
+    apiKey = await (await fetch("/api-key.txt")).text();
+    if (!apiKey) {
+        throw 'Unable to fetch API key';
     }
-    lastResultDiv = resultDiv;
+    promptBtnManager.enableBtn();
+})();
+
+// Results are saved using localStorage API
+const storedPromptResponsesJson = localStorage.getItem('storedPromptResponses');
+const storedPromptResponses: PromptResponse[] = storedPromptResponsesJson ? JSON.parse(storedPromptResponsesJson) as PromptResponse[] : [];
+// Rendering results at load time
+for (const promptResponse of storedPromptResponses) {
+    responsesManager.insert(promptResponse);
 }
 
-let currentTheme = localStorage.getItem('theme') ?? 'dark';
-if (currentTheme !== 'dark') {
-    htmlNode.classList.add('light');
-}
+document.getElementById('prompt-form')!.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const prompt = (document.getElementById('prompt-input') as HTMLInputElement).value;
+    promptBtnManager.disableBtn();
+    const gptResponse = await (await fetch("https://api.openai.com/v1/engines/text-curie-001/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            prompt: prompt,
+            temperature: 0.8,
+            max_tokens: 64
+        }),
+    })).json();
+    /*
+    // Previously used for testing only
+    const gptResponses = [];
+    const gptResponse = JSON.parse(gptResponses[Math.floor(Math.random() * gptResponses.length)]);
+    await delay(3);
+    */
+    promptBtnManager.enableBtn();
+    if (gptResponse.choices === undefined || gptResponse.choices.length === 0) {
+        throw 'Choices missing in response';
+    }
+    // Adding "..." if "finish_reason" is "length" to indicate that is not the end of output
+    // Also trimming because API seems to send two newlines (\n\n) at beginning of text
+    const response = (gptResponse.choices[0].finish_reason === 'length' ? gptResponse.choices[0].text + '...' : gptResponse.choices[0].text).trim();
+    const promptResponse = { prompt, response };
+    responsesManager.insert(promptResponse);
+    // Saving using localStorage API
+    storedPromptResponses.push(promptResponse);
+    localStorage.setItem('storedPromptResponses', JSON.stringify(storedPromptResponses));
+});
 
+themeManager.setTheme(localStorage.getItem('theme') as 'light' | 'dark' | null ?? 'dark');
 document.getElementById('theme-button')!.addEventListener('click', function () {
-    if (currentTheme === 'dark') {
-        htmlNode.classList.add('light');
-        currentTheme = 'light';
-    } else {
-        htmlNode.classList.remove('light');
-        currentTheme = 'dark';
-    }
-    localStorage.setItem('theme', currentTheme);
+    themeManager.toggleTheme();
 });
 
 document.getElementById('clear-prompt-responses-button')!.addEventListener('click', function () {
-    lastResultDiv = null;
     storedPromptResponses.splice(0);
     localStorage.setItem('storedPromptResponses', JSON.stringify(storedPromptResponses));
-    while (promptResponsesDiv.hasChildNodes()) {
-        promptResponsesDiv.removeChild(promptResponsesDiv.lastChild!);
-    }
+    responsesManager.clear();
 });
 
 interface PromptResponse {
     prompt: string;
     response: string;
-} 
+}
+
+interface ResponsesManager {
+    promptResponsesDiv: HTMLElement;
+    promptResponsesSection: HTMLElement;
+    lastResultDiv: null | HTMLElement;
+    insert(promptResponse: PromptResponse): void;
+    clear(): void;
+}
+
+interface ThemeManager {
+    currentTheme: "light" | "dark" | null;
+    htmlNode: HTMLHtmlElement;
+    setTheme(theme: 'light' | 'dark'): void;
+    toggleTheme(): void;
+}
