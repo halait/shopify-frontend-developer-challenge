@@ -134,9 +134,11 @@ a:visited {
 #prompt-responses-section {
     display: none;
 }
-#theme-button {
+#theme-button, #clear-prompt-responses-button {
     margin: 0;
+    padding: 0.5rem;
 }
+
 @media screen and (min-width: 60rem) {
     body {
         padding: 0 2rem;

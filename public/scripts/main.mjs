@@ -26,7 +26,7 @@ promptForm.addEventListener('submit', async function (e) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer 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`,
+            Authorization: `Bearer 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`,
         },
         body: JSON.stringify(data),
     })).json();
@@ -36,6 +36,7 @@ promptForm.addEventListener('submit', async function (e) {
     const gptResponse = JSON.parse(gptResponses[Math.floor(Math.random() * gptResponses.length)]);
     await delay(3);
     */
+    console.log(gptResponse);
     promptBtn.classList.remove('Spin');
     promptBtn.removeAttribute('disabled');
     if (gptResponse.choices === undefined || gptResponse.choices.length === 0) {
